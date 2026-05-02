@@ -12,13 +12,22 @@ RUN apt-get update \
 # Note: For Rust, cargo and optional tools won't be available in the marking environment
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -yy --no-install-recommends curl \
-    && curl -O https://static.rust-lang.org/dist/rust-1.95.0-x86_64-unknown-linux-gnu.tar.gz \
-    && tar xf rust-1.95.0-x86_64-unknown-linux-gnu.tar.gz \
-    && rm rust-1.95.0-x86_64-unknown-linux-gnu.tar.gz \
-    && cd rust-1.95.0-x86_64-unknown-linux-gnu \
+    &&  \
+        if [ "$(dpkg --print-architecture)" = "arm64" ]; then \
+            target=rust-1.95.0-aarch64-unknown-linux-gnu; \
+        elif [ "$(dpkg --print-architecture)" = "amd64" ]; then \
+            target=rust-1.95.0-x86_64-unknown-linux-gnu; \
+        else \
+            echo "Unsupported architecture" && exit 1; \
+        fi \
+    && curl -O https://static.rust-lang.org/dist/$target.tar.gz \
+    && tar xf $target.tar.gz \
+    && rm $target.tar.gz \
+    && cd $target \
     && ./install.sh \
-    && cd .. && rm -r rust-1.95.0-x86_64-unknown-linux-gnu \
+    && cd .. && rm -r $target \
     && apt-get remove -yy curl \
+    && apt-get autoremove -yy \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
